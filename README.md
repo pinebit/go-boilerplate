@@ -1,2 +1,3 @@
 # go-boilerplate
-Golang server boilerplate
+
+Golang server boilerplate.

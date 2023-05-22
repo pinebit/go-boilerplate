@@ -1,0 +1,6 @@
+# this is a sample toml config
+
+DevMode = true
+
+[HttpServer]
+Port = 3333
