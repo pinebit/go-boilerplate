@@ -8,7 +8,9 @@ To create a battle-tested server template that implements the most common best p
 
 ## Features
 
+* Dockerfile
 * TOML configuration
 * Structured logging with zap
 * Graceful boot/shutdown
 * Prometheus metrics
+* Simple HTTP server with gin
