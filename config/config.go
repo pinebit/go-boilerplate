@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/fs"
 	"os"
+	"time"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -14,13 +15,15 @@ type HttpServerConfig struct {
 }
 
 type Config struct {
-	DevMode    bool
-	HttpServer *HttpServerConfig
+	DevMode         bool
+	ShutdownTimeout Duration
+	HttpServer      *HttpServerConfig
 }
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		DevMode: true,
+		DevMode:         true,
+		ShutdownTimeout: MakeDuration(5 * time.Second),
 		HttpServer: &HttpServerConfig{
 			Port: 8080,
 		},

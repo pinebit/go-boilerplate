@@ -23,7 +23,7 @@ func TestLoadFromToml(t *testing.T) {
 	t.Parallel()
 
 	c := config.NewDefaultConfig()
-	err := c.LoadFromToml("testdata/sample.toml")
+	err := c.LoadFromToml("config.toml")
 	assert.NoError(t, err)
 	assert.NotNil(t, c.HttpServer)
 	assert.Equal(t, 3333, int(c.HttpServer.Port))
@@ -32,7 +32,7 @@ func TestLoadFromToml(t *testing.T) {
 func TestWriteToml(t *testing.T) {
 	t.Parallel()
 
-	const outputFile = "testdata/output.toml"
+	const outputFile = "output.toml"
 	c := config.NewDefaultConfig()
 	err := c.WriteToml(outputFile, 0666)
 	assert.NoError(t, err)

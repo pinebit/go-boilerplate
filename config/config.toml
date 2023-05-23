@@ -1,6 +1,7 @@
 # this is a sample toml config
 
 DevMode = true
+ShutdownTimeout = '5s'
 
 [HttpServer]
 Port = 3333

@@ -10,5 +10,5 @@ To create a battle-tested server template that implements the most common best p
 
 * TOML configuration
 * Structured logging with zap
-
-
+* Graceful boot/shutdown
+* Prometheus metrics
