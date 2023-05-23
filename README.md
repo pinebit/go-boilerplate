@@ -1,5 +1,7 @@
 # go-boilerplate
 
+[![Go](https://github.com/pinebit/go-boilerplate/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/pinebit/go-boilerplate/actions/workflows/go.yml)
+
 Golang server boilerplate.
 
 ## Motivation
