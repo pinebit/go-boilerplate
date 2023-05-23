@@ -25,6 +25,8 @@ type Logger interface {
 	Errorw(msg string, keysAndValues ...interface{})
 	Panicw(msg string, keysAndValues ...interface{})
 	Fatalw(msg string, keysAndValues ...interface{})
+
+	Zap() *zap.Logger
 }
 
 type logger struct {
@@ -121,4 +123,8 @@ func (l logger) Panicw(msg string, keysAndValues ...interface{}) {
 
 func (l logger) Fatalw(msg string, keysAndValues ...interface{}) {
 	l.zap.Fatalw(msg, keysAndValues...)
+}
+
+func (l logger) Zap() *zap.Logger {
+	return l.zap.Desugar()
 }

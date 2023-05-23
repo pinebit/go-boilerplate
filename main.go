@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	net_http "net/http"
 
 	"github.com/pinebit/go-boilerplate/config"
 	"github.com/pinebit/go-boilerplate/logger"
 	"github.com/pinebit/go-boilerplate/services/http"
 
 	"github.com/pinebit/go-boot/boot"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -23,9 +21,8 @@ func main() {
 		panic(err)
 	}
 
-	net_http.Handle("/metrics", promhttp.Handler())
-
-	httpServer := http.NewServer(config.HttpServer)
+	router := http.NewRouter(logger, config)
+	httpServer := http.NewServer(logger, config.HttpServer, router)
 
 	logger.Info("Starting server application...")
 
