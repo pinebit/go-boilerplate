@@ -15,3 +15,10 @@ To create a battle-tested server template that implements the most common best p
 * [Prometheus](https://github.com/prometheus/client_golang) metrics
 * Simple HTTP server with [gin framework](https://github.com/gin-gonic/gin)
 * Dependency injection with [dig](https://github.com/uber-go/dig)
+
+## Usage
+
+1. Find and replace all "boilerplate" words for your product.
+2. Building: `docker build .` or `make build`
+3. Testing: `make test` and `make lint`
+4. Running: `make run` or simply `go run .`
