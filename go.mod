@@ -9,6 +9,7 @@ require (
 	github.com/pinebit/go-boot v1.1.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/stretchr/testify v1.8.3
+	go.uber.org/dig v1.17.0
 	go.uber.org/zap v1.24.0
 )
 

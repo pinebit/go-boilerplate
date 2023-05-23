@@ -21,10 +21,10 @@ type server struct {
 	serverService boot.HttpServer
 }
 
-func NewServer(logger logger.Logger, config *config.HttpServerConfig, router Router) Server {
+func NewServer(logger logger.Logger, config *config.Config, router Router) Server {
 	ctx, cancel := context.WithCancel(context.Background())
 	netHttpServer := &net_http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.Address, config.Port),
+		Addr:    fmt.Sprintf("%s:%d", config.HttpServer.Address, config.HttpServer.Port),
 		Handler: router.Handler(),
 		BaseContext: func(l net.Listener) context.Context {
 			return ctx
