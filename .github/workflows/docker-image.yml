@@ -2,17 +2,26 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - uses: actions/checkout@v7.0.1
+      - name: Build image
+        run: docker build --tag boilerplate:test .
+      - name: Smoke test
+        shell: bash
+        run: |
+          docker run --detach --name boilerplate --publish 127.0.0.1:3333:3333 boilerplate:test
+          trap 'docker logs boilerplate; docker rm --force boilerplate' EXIT
+          curl --fail --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:3333/
+          curl --fail http://127.0.0.1:3333/metrics
+          docker stop --time 10 boilerplate
+          test "$(docker inspect --format '{{.State.ExitCode}}' boilerplate)" = 0

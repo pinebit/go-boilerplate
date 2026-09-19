@@ -1,24 +1,32 @@
 package config_test
 
 import (
+	"github.com/pinebit/go-boilerplate/config"
 	"testing"
 	"time"
-
-	"github.com/pinebit/go-boilerplate/config"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDuration(t *testing.T) {
 	t.Parallel()
-
 	d := config.MakeDuration(5 * time.Second)
-	assert.Equal(t, 5*time.Second, d.Duration())
-	assert.Equal(t, "5s", d.String())
-
-	d, err := config.ParseDuration("3s")
-	assert.NoError(t, err)
-	assert.Equal(t, 3*time.Second, d.Duration())
-
-	_, err = config.ParseDuration("xxx")
-	assert.Error(t, err)
+	text, err := d.MarshalText()
+	if err != nil || string(text) != "5s" {
+		t.Fatalf("marshal: %q, %v", text, err)
+	}
+	var got config.Duration
+	if err := got.UnmarshalText(text); err != nil {
+		t.Fatal(err)
+	}
+	if got.Duration() != d.Duration() || got.String() != "5s" {
+		t.Fatal("round trip mismatch")
+	}
+	if err := got.UnmarshalText([]byte("invalid")); err == nil {
+		t.Fatal("expected invalid duration error")
+	}
+	if got.Duration() != 5*time.Second {
+		t.Fatal("invalid input mutated duration")
+	}
+	if _, err := config.ParseDuration("invalid"); err == nil {
+		t.Fatal("expected parse error")
+	}
 }

@@ -1,9 +1,8 @@
 package logger
 
-import "go.uber.org/zap"
+import (
+	"io"
+	"log/slog"
+)
 
-func NewNoopLogger() Logger {
-	return &logger{
-		zap: zap.NewNop().Sugar(),
-	}
-}
+func NewNoopLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }

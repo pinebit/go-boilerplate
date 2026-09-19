@@ -1,7 +1,11 @@
-# this is a sample toml config
-
+# Development configuration. Use DevMode = false for JSON production logs.
 DevMode = true
 ShutdownTimeout = '5s'
 
 [HttpServer]
+Address = ''
 Port = 3333
+ReadHeaderTimeout = '5s'
+ReadTimeout = '15s'
+WriteTimeout = '30s'
+IdleTimeout = '60s'

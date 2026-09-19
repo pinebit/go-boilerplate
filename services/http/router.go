@@ -1,60 +1,32 @@
 package http
 
 import (
-	net_http "net/http"
+	"log/slog"
+	"net/http"
 	"time"
 
-	ginzap "github.com/gin-contrib/zap"
-	"github.com/gin-gonic/gin"
-	"github.com/pinebit/go-boilerplate/config"
-	"github.com/pinebit/go-boilerplate/logger"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type Router interface {
-	Handler() net_http.Handler
-}
-
-type router struct {
-	engine *gin.Engine
-}
-
-var (
-	promHelloWorldCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "hello_world",
-		Help: "Number of querying 'hello world' endpoint",
+// NewRouter owns its metrics registry so multiple instances remain independent.
+func NewRouter(log *slog.Logger) http.Handler {
+	registry := prometheus.NewRegistry()
+	counter := prometheus.NewCounter(prometheus.CounterOpts{Name: "hello_world", Help: "Number of querying 'hello world' endpoint"})
+	registry.MustRegister(counter, collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		counter.Inc()
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("Hello world!"))
 	})
-)
-
-func NewRouter(logger logger.Logger, config *config.Config) Router {
-	if config.DevMode {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	gr := gin.New()
-
-	gr.Use(ginzap.Ginzap(logger.Zap(), time.RFC3339, true))
-
-	gr.Use(ginzap.RecoveryWithZap(logger.Zap(), true))
-
-	gr.GET("/", func(c *gin.Context) {
-		promHelloWorldCounter.Inc()
-		c.String(200, "Hello world!")
+	mux.Handle("GET /metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.InfoContext(r.Context(), "HTTP request", "method", r.Method, "path", r.URL.Path, "duration", time.Since(start))
+		}()
+		mux.ServeHTTP(w, r)
 	})
-
-	gr.GET("/metrics", func(c *gin.Context) {
-		promhttp.Handler().ServeHTTP(c.Writer, c.Request)
-	})
-
-	return &router{
-		engine: gr,
-	}
-}
-
-func (r router) Handler() net_http.Handler {
-	return r.engine
 }

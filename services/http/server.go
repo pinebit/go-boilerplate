@@ -2,48 +2,71 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net"
-	net_http "net/http"
+	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/pinebit/go-boilerplate/config"
-	"github.com/pinebit/go-boilerplate/logger"
-	"github.com/pinebit/go-boot/boot"
 )
 
-type Server interface {
-	boot.Service
+type Server struct {
+	server *http.Server
+	log    *slog.Logger
 }
 
-type server struct {
-	logger        logger.Logger
-	cancelBaseCtx context.CancelFunc
-	serverService boot.HttpServer
+func NewServer(log *slog.Logger, cfg *config.Config, handler http.Handler) *Server {
+	return &Server{log: log, server: &http.Server{
+		Addr:              net.JoinHostPort(cfg.HttpServer.Address, strconv.Itoa(int(cfg.HttpServer.Port))),
+		Handler:           handler,
+		ReadHeaderTimeout: cfg.HttpServer.ReadHeaderTimeout.Duration(),
+		ReadTimeout:       cfg.HttpServer.ReadTimeout.Duration(),
+		WriteTimeout:      cfg.HttpServer.WriteTimeout.Duration(),
+		IdleTimeout:       cfg.HttpServer.IdleTimeout.Duration(),
+		ErrorLog:          slog.NewLogLogger(log.Handler(), slog.LevelError),
+	}}
 }
 
-func NewServer(logger logger.Logger, config *config.Config, router Router) Server {
-	ctx, cancel := context.WithCancel(context.Background())
-	netHttpServer := &net_http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.HttpServer.Address, config.HttpServer.Port),
-		Handler: router.Handler(),
-		BaseContext: func(l net.Listener) context.Context {
-			return ctx
-		},
+// Run stops accepting requests on cancellation and allows active requests to drain.
+func (s *Server) Run(ctx context.Context, shutdownTimeout time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-	return &server{
-		logger:        logger.Named("http.Server"),
-		cancelBaseCtx: cancel,
-		serverService: boot.NewHttpServer(netHttpServer),
+	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", s.server.Addr)
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
 	}
+	s.log.Info("HTTP server started", "address", listener.Addr().String())
+	return s.serve(ctx, listener, shutdownTimeout)
 }
 
-func (s server) Start(ctx context.Context) error {
-	s.logger.Debug("Starting http server...")
-	return s.serverService.Start(ctx)
-}
-
-func (s server) Stop(ctx context.Context) error {
-	s.logger.Debug("Stoppping http server...")
-	s.cancelBaseCtx()
-	return s.serverService.Stop(ctx)
+func (s *Server) serve(ctx context.Context, listener net.Listener, shutdownTimeout time.Duration) error {
+	done := make(chan error, 1)
+	go func() { done <- s.server.Serve(listener) }()
+	select {
+	case err := <-done:
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return fmt.Errorf("serve: %w", err)
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		err := s.server.Shutdown(shutdownCtx)
+		if err != nil {
+			err = errors.Join(err, s.server.Close())
+		}
+		serveErr := <-done
+		if !errors.Is(serveErr, http.ErrServerClosed) {
+			err = errors.Join(err, serveErr)
+		}
+		if err != nil {
+			return fmt.Errorf("shutdown: %w", err)
+		}
+		s.log.Info("HTTP server stopped")
+		return nil
+	}
 }
